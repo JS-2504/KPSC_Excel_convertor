@@ -324,10 +324,10 @@ st.markdown(CSS, unsafe_allow_html=True)
 # ---------------------------------------------------------------------------
 st.markdown(
     """
-    # <div class="brand">
-    #     <div class="brand-mark">R</div>
-    #     <span>RankSheet</span>
-    # </div>
+     <div class="brand">
+         <div class="brand-mark"></div>
+         <span></span>
+     </div>
     <div class="hero">
         <h1>Convert PSC rank lists to Excel</h1>
         <p class="subtitle">
