@@ -325,7 +325,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(
     """
      <div class="brand">
-         <div class="brand-mark"></div>
+        
          <span></span>
      </div>
     <div class="hero">
