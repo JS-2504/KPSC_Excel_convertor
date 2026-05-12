@@ -215,7 +215,7 @@ st.markdown(CSS, unsafe_allow_html=True)
 st.markdown(
     """
     <div class="hero">
-        <div class="hero-badge">FREE · NO SIGN-UP · NO WATERMARK</div>
+       
         <h1>Kerala PSC Rank List Converter</h1>
         <p class="subtitle">
             Drop a Kerala Public Service Commission ranked-list PDF below and
