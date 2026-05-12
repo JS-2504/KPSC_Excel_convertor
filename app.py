@@ -326,7 +326,7 @@ st.markdown(
     """
      <div class="brand">
         
-         <span></span>
+        
      </div>
     <div class="hero">
         <h1>Convert PSC rank lists to Excel</h1>
