@@ -11,7 +11,6 @@ or deploy free on Streamlit Community Cloud (see README.md).
 """
 from __future__ import annotations
 
-import io
 import tempfile
 import time
 from collections import Counter
@@ -27,8 +26,8 @@ from psc_pdf_to_xlsx import extract_rank_list, write_xlsx
 # Page configuration
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Kerala PSC Rank List Converter",
-    page_icon="📋",
+    page_title="PSC Rank List Converter",
+    page_icon="📊",
     layout="centered",
     initial_sidebar_state="collapsed",
     menu_items={
@@ -41,168 +40,279 @@ st.set_page_config(
 
 
 # ---------------------------------------------------------------------------
-# Custom CSS — gives the page a clean, premium look
+# Theme tokens — exposed as CSS variables so styles stay consistent
 # ---------------------------------------------------------------------------
 CSS = """
 <style>
-/* Hide the default Streamlit chrome */
+:root {
+    --brand: #2da77d;
+    --brand-hover: #248a66;
+    --brand-soft: #e7f6f0;
+    --brand-softer: #f3faf7;
+    --ink-900: #0b1f17;
+    --ink-700: #1f2a26;
+    --ink-500: #4b5b54;
+    --ink-300: #8a9690;
+    --ink-100: #d6dcd9;
+    --line: #e8ecea;
+    --line-soft: #f1f4f3;
+    --bg: #ffffff;
+}
+
+/* Reset Streamlit chrome */
 #MainMenu, header, footer {visibility: hidden;}
-.stDeployButton {display: none;}
+.stDeployButton {display: none !important;}
+[data-testid="stToolbar"] {display: none !important;}
+[data-testid="stHeader"] {display: none !important;}
+[data-testid="stStatusWidget"] {display: none !important;}
 
-/* Page background */
+/* Clean system font stack */
+html, body, [class*="css"] {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI",
+                 "Helvetica Neue", Arial, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 .stApp {
-    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-    min-height: 100vh;
+    background: var(--bg);
+    color: var(--ink-700);
 }
 
-/* Tighten top padding */
 .block-container {
-    padding-top: 2rem;
-    padding-bottom: 4rem;
-    max-width: 780px;
+    padding-top: 3.5rem !important;
+    padding-bottom: 4rem !important;
+    max-width: 720px !important;
 }
 
-/* Hero */
+/* ----- Brand mark + hero ------------------------------------------------ */
+.brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 2.25rem;
+    color: var(--ink-700);
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: -0.01em;
+}
+.brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: var(--brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: -0.02em;
+}
+
 .hero {
     text-align: center;
-    margin-bottom: 1.5rem;
-}
-.hero-badge {
-    display: inline-block;
-    background: #e0e7ff;
-    color: #4338ca;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    margin-bottom: 1rem;
+    margin-bottom: 2rem;
 }
 .hero h1 {
-    font-size: 2.3rem !important;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0 0 0.6rem 0 !important;
-    letter-spacing: -0.025em;
-    line-height: 1.15;
+    font-size: 2.5rem !important;
+    font-weight: 700 !important;
+    color: var(--ink-900) !important;
+    letter-spacing: -0.035em !important;
+    line-height: 1.1 !important;
+    margin: 0 0 0.85rem 0 !important;
 }
 .hero p.subtitle {
-    font-size: 1.05rem;
-    color: #475569;
-    max-width: 540px;
+    font-size: 1.06rem;
+    color: var(--ink-500);
+    max-width: 520px;
     margin: 0 auto;
     line-height: 1.55;
+    font-weight: 400;
 }
 
-/* Style Streamlit's file uploader to look like a premium drop zone */
+/* ----- File uploader ---------------------------------------------------- */
+section[data-testid="stFileUploaderDropzone"],
 section[data-testid="stFileUploadDropzone"] {
-    background: white !important;
-    border: 2px dashed #cbd5e1 !important;
+    background: var(--brand-softer) !important;
+    border: 1.5px dashed #b5d8c9 !important;
     border-radius: 14px !important;
     padding: 2.5rem 1.5rem !important;
-    transition: all 0.2s ease;
+    transition: all 0.18s ease;
 }
+section[data-testid="stFileUploaderDropzone"]:hover,
 section[data-testid="stFileUploadDropzone"]:hover {
-    border-color: #1F4E79 !important;
-    background: #f0f5fa !important;
+    border-color: var(--brand) !important;
+    background: var(--brand-soft) !important;
 }
+section[data-testid="stFileUploaderDropzone"] button,
 section[data-testid="stFileUploadDropzone"] button {
-    background: #1F4E79 !important;
+    background: var(--brand) !important;
     color: white !important;
     border: none !important;
     border-radius: 8px !important;
     font-weight: 600 !important;
-    padding: 0.5rem 1.25rem !important;
+    padding: 0.55rem 1.25rem !important;
+    transition: background 0.15s ease !important;
+}
+section[data-testid="stFileUploaderDropzone"] button:hover,
+section[data-testid="stFileUploadDropzone"] button:hover {
+    background: var(--brand-hover) !important;
+}
+/* Dropzone instruction text */
+[data-testid="stFileUploaderDropzoneInstructions"],
+section[data-testid="stFileUploaderDropzone"] small,
+section[data-testid="stFileUploadDropzone"] small {
+    color: var(--ink-500) !important;
 }
 
-/* Download button */
-.stDownloadButton button {
-    background: linear-gradient(135deg, #1F4E79 0%, #2E75B6 100%) !important;
+/* Uploaded-file pill */
+[data-testid="stFileUploaderFile"] {
+    background: white !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 10px !important;
+}
+
+/* ----- Buttons ---------------------------------------------------------- */
+.stDownloadButton button, .stButton button {
+    background: var(--brand) !important;
     color: white !important;
     border: none !important;
     padding: 0.85rem 2rem !important;
     border-radius: 10px !important;
     font-weight: 600 !important;
-    font-size: 1.02rem !important;
-    box-shadow: 0 2px 6px rgba(31, 78, 121, 0.25) !important;
-    transition: all 0.18s ease !important;
-    width: 100%;
+    font-size: 1rem !important;
+    letter-spacing: -0.005em !important;
+    box-shadow: 0 1px 2px rgba(45, 167, 125, 0.10) !important;
+    transition: all 0.15s ease !important;
 }
-.stDownloadButton button:hover {
+.stDownloadButton button:hover, .stButton button:hover {
+    background: var(--brand-hover) !important;
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(31, 78, 121, 0.35) !important;
+    box-shadow: 0 4px 12px rgba(45, 167, 125, 0.22) !important;
+}
+.stDownloadButton button:focus,
+.stButton button:focus,
+.stDownloadButton button:active,
+.stButton button:active {
+    background: var(--brand-hover) !important;
+    box-shadow: 0 0 0 3px rgba(45, 167, 125, 0.18) !important;
+    color: white !important;
 }
 
-/* Progress bar */
+/* ----- Progress bar ----------------------------------------------------- */
 .stProgress > div > div > div > div {
-    background: linear-gradient(90deg, #2E75B6 0%, #1F4E79 100%) !important;
+    background: var(--brand) !important;
+}
+.stProgress > div > div > div {
+    background: var(--line-soft) !important;
 }
 
-/* Metric cards */
+/* ----- Metric cards ----------------------------------------------------- */
 [data-testid="stMetric"] {
     background: white;
-    padding: 1rem 1.25rem;
+    padding: 1.1rem 1.25rem;
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid var(--line);
+    box-shadow: none;
+    transition: border-color 0.15s ease;
 }
+[data-testid="stMetric"]:hover {
+    border-color: #c8d5d0;
+}
+[data-testid="stMetricLabel"] p,
 [data-testid="stMetricLabel"] {
-    color: #64748b !important;
-    font-size: 0.82rem !important;
+    color: var(--ink-300) !important;
+    font-size: 0.78rem !important;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     font-weight: 600 !important;
 }
 [data-testid="stMetricValue"] {
-    color: #0f172a !important;
-    font-size: 1.7rem !important;
+    color: var(--ink-900) !important;
+    font-size: 1.85rem !important;
     font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
 }
 
-/* Success / error banners */
+/* ----- Banners ---------------------------------------------------------- */
 .banner {
-    padding: 1rem 1.25rem;
+    padding: 0.95rem 1.15rem;
     border-radius: 10px;
     font-weight: 500;
-    margin: 1.2rem 0;
+    margin: 1.4rem 0 1.6rem;
     display: flex;
     align-items: center;
-    gap: 0.6rem;
+    gap: 0.7rem;
+    font-size: 0.96rem;
 }
 .banner-success {
-    background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
-    border-left: 4px solid #16a34a;
-    color: #14532d;
+    background: var(--brand-soft);
+    border: 1px solid #c0e2d3;
+    color: #0d5a3e;
+}
+.banner-success .dot {
+    width: 20px; height: 20px;
+    background: var(--brand);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
 }
 .banner-error {
-    background: #fee2e2;
-    border-left: 4px solid #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
     color: #7f1d1d;
 }
 
-/* Section labels */
+/* ----- Section labels --------------------------------------------------- */
 .section-label {
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-size: 0.78rem;
-    color: #64748b;
+    font-size: 0.74rem;
+    color: var(--ink-300);
     font-weight: 600;
-    margin: 1.6rem 0 0.6rem;
+    margin: 1.8rem 0 0.65rem;
 }
 
-/* Tables (st.dataframe) */
+/* ----- Dataframes ------------------------------------------------------- */
 [data-testid="stDataFrame"] {
     border-radius: 10px;
     overflow: hidden;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--line);
 }
 
-/* Footer */
+/* ----- Expander --------------------------------------------------------- */
+[data-testid="stExpander"] {
+    border: 1px solid var(--line) !important;
+    border-radius: 10px !important;
+    box-shadow: none !important;
+}
+[data-testid="stExpander"] summary {
+    font-weight: 500;
+    color: var(--ink-700);
+}
+
+/* ----- Footer ----------------------------------------------------------- */
 .app-footer {
     text-align: center;
-    color: #94a3b8;
-    font-size: 0.85rem;
-    padding-top: 2rem;
+    color: var(--ink-300);
+    font-size: 0.83rem;
+    padding-top: 3rem;
+    border-top: 1px solid var(--line-soft);
+    margin-top: 3rem;
+}
+.app-footer a {
+    color: var(--ink-500);
+    text-decoration: none;
+}
+.app-footer a:hover {
+    color: var(--brand);
 }
 </style>
 """
@@ -210,17 +320,20 @@ st.markdown(CSS, unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
-# Hero header
+# Header — brand mark + hero
 # ---------------------------------------------------------------------------
 st.markdown(
     """
+    <div class="brand">
+        <div class="brand-mark">R</div>
+        <span>RankSheet</span>
+    </div>
     <div class="hero">
-       
-        <h1>Kerala PSC Rank List Converter</h1>
+        <h1>Convert PSC rank lists to Excel</h1>
         <p class="subtitle">
-            Drop a Kerala Public Service Commission ranked-list PDF below and
-            get a clean, structured Excel file in seconds — every candidate,
-            every category, every count, all sorted out for you.
+            Drop a Kerala Public Service Commission ranked-list PDF and get a
+            clean, structured Excel file — every candidate, every category,
+            every count, sorted out for you.
         </p>
     </div>
     """,
@@ -231,30 +344,28 @@ st.markdown(
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def convert_pdf(pdf_bytes: bytes, original_name: str):
-    """Run the converter and return (rows, meta, xlsx_bytes, n_pages)."""
-    # Save PDF to a temp file because pdfplumber wants a path
+def convert_pdf(pdf_bytes: bytes):
+    """Run the converter; return (rows, meta, xlsx_bytes)."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(pdf_bytes)
         pdf_path = Path(tmp.name)
 
-    progress = st.progress(0.0, text="Initialising…")
+    progress = st.progress(0.0, text="Preparing…")
 
     def on_progress(current: int, total: int, msg: str) -> None:
-        # reserve the last 10% for the XLSX build step
+        # leave the last 10% for the XLSX-build phase
         pct = 0.05 + 0.85 * (current / total if total else 0)
         progress.progress(pct, text=msg)
 
     rows, meta = extract_rank_list(pdf_path, progress_callback=on_progress)
 
-    progress.progress(0.92, text=f"Building Excel file with {len(rows)} rows…")
+    progress.progress(0.92, text=f"Building Excel file with {len(rows):,} rows…")
     xlsx_path = pdf_path.with_suffix(".xlsx")
     write_xlsx(rows, meta, xlsx_path)
-    with open(xlsx_path, "rb") as f:
-        xlsx_bytes = f.read()
+    xlsx_bytes = xlsx_path.read_bytes()
 
-    progress.progress(1.0, text="Done!")
-    time.sleep(0.3)
+    progress.progress(1.0, text="Done")
+    time.sleep(0.25)
     progress.empty()
 
     # cleanup
@@ -271,17 +382,16 @@ def convert_pdf(pdf_bytes: bytes, original_name: str):
 # File uploader
 # ---------------------------------------------------------------------------
 uploaded = st.file_uploader(
-    " ",
+    "Upload PDF",
     type=["pdf"],
     label_visibility="collapsed",
-    help="Up to 200 MB. Your file is processed in memory and never stored.",
+    help="PDF files up to 200 MB",
 )
 
-# Reset state if a new file is uploaded
-if uploaded is not None:
-    if st.session_state.get("last_file") != uploaded.name:
-        st.session_state["last_file"] = uploaded.name
-        st.session_state.pop("result", None)
+# Reset cached result when a new file is uploaded
+if uploaded is not None and st.session_state.get("last_file") != uploaded.name:
+    st.session_state["last_file"] = uploaded.name
+    st.session_state.pop("result", None)
 
 
 # ---------------------------------------------------------------------------
@@ -291,10 +401,9 @@ if uploaded is not None:
     pdf_bytes = uploaded.getvalue()
     size_mb = len(pdf_bytes) / (1024 * 1024)
 
-    # Convert only once per file (cache result in session state)
     if "result" not in st.session_state:
         try:
-            rows, meta, xlsx_bytes = convert_pdf(pdf_bytes, uploaded.name)
+            rows, meta, xlsx_bytes = convert_pdf(pdf_bytes)
             st.session_state["result"] = {
                 "rows": rows,
                 "meta": meta,
@@ -305,7 +414,7 @@ if uploaded is not None:
         except Exception as exc:                # noqa: BLE001
             st.markdown(
                 f'<div class="banner banner-error">⚠ Conversion failed: '
-                f'{exc}</div>',
+                f"{exc}</div>",
                 unsafe_allow_html=True,
             )
             with st.expander("Error details"):
@@ -330,9 +439,13 @@ if uploaded is not None:
     # ---- Success banner ----------------------------------------------------
     n_sections = len({r["Category"] for r in rows})
     st.markdown(
-        f'<div class="banner banner-success">✓ Converted '
-        f"<strong>{len(rows):,}</strong> candidates across "
-        f"<strong>{n_sections}</strong> sections</div>",
+        f"""
+        <div class="banner banner-success">
+            <span class="dot">✓</span>
+            <span>Converted <strong>{len(rows):,}</strong> candidates across
+            <strong>{n_sections}</strong> sections</span>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -347,7 +460,7 @@ if uploaded is not None:
                 unsafe_allow_html=True)
     download_name = Path(result["filename"]).stem + "_converted.xlsx"
     st.download_button(
-        label="⬇  Download Excel file",
+        label="Download Excel file",
         data=xlsx_bytes,
         file_name=download_name,
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -355,10 +468,9 @@ if uploaded is not None:
     )
 
     # ---- Preview -----------------------------------------------------------
-    st.markdown('<div class="section-label">Preview (first 25 rows)</div>',
+    st.markdown('<div class="section-label">Preview · first 25 rows</div>',
                 unsafe_allow_html=True)
     df = pd.DataFrame(rows)
-    # Make Rank an int so it sorts naturally
     if "Rank" in df.columns:
         df["Rank"] = df["Rank"].astype(int)
     st.dataframe(df.head(25), use_container_width=True, hide_index=True,
@@ -387,19 +499,6 @@ if uploaded is not None:
             for k, v in meta.items():
                 st.write(f"**{pretty_keys.get(k, k)}:** {v}")
 
-else:
-    # Empty state — show a small "how it works" panel below the uploader
-    st.markdown(
-        """
-        <div style="text-align:center; color:#64748b; font-size:0.95rem;
-                    margin-top:1.5rem;">
-            Drop a PDF above to begin. Files are processed in memory and never
-            stored on the server.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
 
 # ---------------------------------------------------------------------------
 # Footer
@@ -407,7 +506,7 @@ else:
 st.markdown(
     """
     <div class="app-footer">
-        Built with Streamlit · Free &amp; open source
+        Built with Streamlit &nbsp;·&nbsp; Free &amp; open source
     </div>
     """,
     unsafe_allow_html=True,
